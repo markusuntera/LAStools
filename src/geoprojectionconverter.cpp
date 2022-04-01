@@ -41,6 +41,7 @@
 #include <windows.h>
 #else
 #include <unistd.h>
+#include <libproc.h>
 #endif
 
 #if defined(_MSC_VER) && \
@@ -1893,8 +1894,22 @@ static FILE* open_geo_file(const char* program_name, bool pcs=true, bool vertica
     path[path_len] = '.';
     path_len = 1;
   }
+#elseif __APPLE__
+  fprintf(stderr, "APPLE\n");
+  if (program_name)
+  {
+    _NSGetExecutablePath(path, &path_len);
+    fprintf(stderr, "ERROR: SIIN %s\n", path);
+    path_len = (int)strlen(path);
+  }
+  else
+  {
+    path[path_len] = '.';
+    path_len = 1;
+  }
 #else //_WIN32
-  path_len = readlink("/proc/self/exe", path, MAX_GEO_PATH_LENGTH);
+  pid_t pid = getpid();
+  path_len = proc_pidpath (pid, path, MAX_GEO_PATH_LENGTH);
 #endif //_WIN32
 
   while ((path_len > 0) && (path[path_len] != '\\') && (path[path_len] != '/') && (path[path_len] != ':')) path_len--;
